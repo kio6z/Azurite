@@ -1,11 +1,3 @@
-local Services = setmetatable({}, {
-    __index = function(self, name)
-        local s = game:GetService(name)
-        rawset(self, name, s)
-        return s
-    end
-})
-
 local url = ("https://raw.githubusercontent.com/kio6z/Azurite/refs/heads/main/games/%d/init.lua"):format(game.PlaceId)
 
 local ok, src = pcall(game.HttpGet, game, url, true)
@@ -18,7 +10,7 @@ if not chunk then
     return warn("[Azurite] compile failed")
 end
 
-local ok2, err = pcall(chunk, Services)
+local ok2, err = pcall(chunk)
 if not ok2 then
     warn("[Azurite] runtime error:", err)
 end
