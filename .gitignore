@@ -1,0 +1,15 @@
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+*.luac
+luac.out
+.env
+.env.local
+build/
+dist/
+out/
+node_modules/
