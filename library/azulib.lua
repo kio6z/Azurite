@@ -1,4 +1,7 @@
---[[ Azurite v3 — dense in-game UI library (Linoria/Evenesce style) ]]
+--[[ Azurite v4 — dense in-game UI library (Linoria/Evenesce style) ]]
+local BASE = "https://raw.githubusercontent.com/%s/Azurite/main/library/"
+BASE = string.format(BASE, "kio6z")
+
 function missing(t, f, fallback)
 	if type(f) == t then return f end
 	return fallback
@@ -43,8 +46,59 @@ local Theme = {
 	FontBold=Font.new("rbxasset://fonts/families/GothamSSm.json", Enum.FontWeight.SemiBold),
 	Radius=8, RadiusSm=6, RadiusXs=4,
 }
-local DEFAULT_ICON = "rbxassetid://10951993034"
-local SHADOW_IMG   = "rbxassetid://6014261993"
+
+local _writefile, _readfile, _isfile = writefile, readfile, isfile
+local _isfolder, _makefolder          = isfolder, makefolder
+local _getcustomasset                  = getcustomasset
+local __ICON_BASE      = BASE .. "images/"
+local __ICON_CACHE_DIR = "Azurite/cache"
+
+local function __ensureIconDir()
+    if type(_isfolder) ~= "function" or type(_makefolder) ~= "function" then return end
+    pcall(function()
+        if not _isfolder("Azurite")        then _makefolder("Azurite")        end
+        if not _isfolder(__ICON_CACHE_DIR) then _makefolder(__ICON_CACHE_DIR) end
+    end)
+end
+
+local function __loadIcon(name, fallbackId)
+    if type(_getcustomasset) ~= "function" then
+        return fallbackId
+    end
+    if type(_writefile) ~= "function" or type(_readfile) ~= "function"
+       or type(_isfile) ~= "function" then
+        return fallbackId
+    end
+
+    __ensureIconDir()
+
+    local path = __ICON_CACHE_DIR .. "/" .. name
+
+    local cached
+    local ok = pcall(function() if _isfile(path) then cached = _readfile(path) end end)
+    if ok and cached and #cached > 0 then
+        local okAsset, asset = pcall(_getcustomasset, path)
+        if okAsset and asset then
+            return asset
+        end
+    end
+
+    local dlOk, data = pcall(function() return game:HttpGet(__ICON_BASE .. name) end)
+    if dlOk and data and #data > 0 then
+        local wOk = pcall(function() _writefile(path, data) end)
+        if wOk then
+            local okAsset, asset = pcall(_getcustomasset, path)
+            if okAsset and asset then
+                return asset
+            end
+        end
+    end
+
+    return fallbackId
+end
+
+local DEFAULT_ICON = __loadIcon("ICON.png",   "rbxassetid://10951993034")
+local SHADOW_IMG   = __loadIcon("SHADOW.png", "rbxassetid://6014261993")
 local SPEED = { mul = 1 }
 local function TI(t, style, dir) return TweenInfo.new(t * SPEED.mul, style, dir) end
 local E_OUT  = TweenInfo.new(0.34, Enum.EasingStyle.Quint, Enum.EasingDirection.Out)
@@ -996,8 +1050,6 @@ function UILib:Window(config)
 	-- executors without filesystem access, where it only lasts for the session.
 	local CFG_DIR = tostring(config.ConfigFolder or "Azurite")
 	local CFG_FILE = CFG_DIR .. "/configs.json"
-	local _writefile, _readfile, _isfile = writefile, readfile, isfile
-	local _isfolder, _makefolder = isfolder, makefolder
 	local hasFS = type(_writefile) == "function" and type(_readfile) == "function" and type(_isfile) == "function"
 	local function fsRead()
 		if not hasFS then return nil end
